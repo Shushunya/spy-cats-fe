@@ -29,12 +29,20 @@ import { InputText } from "primereact/inputtext";
 export default function Management() {
   const [cats, setCats] = useState([]);
   const [selectedCat, setSelectedCat] = useState(null);
-  const [visible, setVisible] = useState(false);
+  const [visibleCreate, setVisibleCreate] = useState(false);
+  const [visibleUpdate, setVisibleUpdate] = useState(false);
 
   const [yearsOfExperience, setYearsOfExperience] = useState(0);
   const [name, setName] = useState('');
   const [salary, setSalary] = useState(0);
 
+  const columns = [
+        {field: 'id', header: 'ID'},
+        {field: 'name', header: 'Name'},
+        {field: 'years_of_exp', header: 'Experience'},
+        {field: 'salary', header: 'Salary'},
+        {field: 'breed', header: 'Breed'}
+    ];
 
   const toast = useRef(null);
 
@@ -109,13 +117,30 @@ export default function Management() {
     });
   };
 
-  const columns = [
-        {field: 'id', header: 'ID'},
-        {field: 'name', header: 'Name'},
-        {field: 'years_of_exp', header: 'Experience'},
-        {field: 'salary', header: 'Salary'},
-        {field: 'breed', header: 'Breed'}
-    ];
+  const proceedUpdate = () => {
+    const cat = selectedCat;
+    const updatedCat = {
+      ...cat,
+      salary: salary
+    };
+    console.log(updatedCat)
+    // Logic to update the cat's salary in the backend
+    fetch(`http://localhost:8000/cats/${cat.id}?new_salary=${salary}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedCat),
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Cat updated:', data);
+      setCats(cats.map(c => c.id === cat.id ? data : c));
+      setVisibleUpdate(false);
+      toast.current.show({ severity: 'success', summary: 'Success', detail: `${data.name}'s salary has been updated`, life: 3000 });
+    })
+
+  };
   
   React.useEffect(() => {
     async function fetchCats() {
@@ -136,6 +161,12 @@ export default function Management() {
     }
     fetchCats();
   }, []);
+
+  const selectCatRow = (e) => {
+    setSelectedCat(e.value);
+    console.log("Selected cat:", e.value);
+    setSalary(e.value.salary);
+  };
 
   
 
@@ -161,7 +192,7 @@ export default function Management() {
           showGridlines 
           selectionMode="single" 
           selection={selectedCat}
-          onSelectionChange={(e) => setSelectedCat(e.value)}
+          onSelectionChange={selectCatRow}
           tableStyle={{ minWidth: '50rem' }}>
           
           {columns.map((col) => (
@@ -173,9 +204,11 @@ export default function Management() {
           <Toast ref={toast} />
             <ConfirmDialog />
       <div className="card flex flex-wrap justify-content-center gap-3">
-            <Button onClick={setVisible} label="Add" icon="pi pi-check" />
+            <Button onClick={setVisibleCreate} label="Add" icon="pi pi-check" />
+            <Button onClick={setVisibleUpdate} label="Update" icon="pi pi-check" />
             <Button onClick={confirmDelete} label="Delete" icon="pi pi-times" iconPos="right"  severity="danger"/>
-            <Dialog header="Add a cat" visible={visible} style={{ width: '50vw' }} onHide={() => {if (!visible) return; setVisible(false); }}>
+            
+            <Dialog header="Add a cat" visible={visibleCreate} style={{ width: '50vw' }} onHide={() => {if (!visibleCreate) return; setVisibleCreate(false); }}>
                 <p className="m-0">
                     Please fill in the details of the new cat you want to add.
                     Name and Years of Experience are required fields.
@@ -190,11 +223,22 @@ export default function Management() {
                       <InputNumber inputId="yearsOfExperience" value={yearsOfExperience} onValueChange={(e) => setYearsOfExperience(e.value)} />
                   </div>
                   <Button onClick={proceedCreate} label="Confirm" icon="pi pi-check" />
-                  {/* <Button onClick={setVisible} label="Cancel" icon="pi pi-times" /> */}
+                </div>
+            </Dialog>
+
+            <Dialog header="Update Cat" visible={visibleUpdate} style={{ width: '50vw' }} onHide={() => {if (!visibleUpdate) return; setVisibleUpdate(false); }}>
+              <p className="m-0">
+                    Please enter the new salary for the selected cat.
+                </p>
+                <div className="card flex flex-wrap gap-3 p-fluid">
+                  <div className="flex-auto">
+                      <label htmlFor="salary" className="font-bold block mb-2">Salary</label>
+                      <InputNumber inputId="salary" value={salary} onValueChange={(e) => setSalary(e.value)} />
+                  </div>
+                  <Button onClick={proceedUpdate} label="Confirm" icon="pi pi-check" />
                 </div>
             </Dialog>
         </div>
     </div>
   );
-
 }
