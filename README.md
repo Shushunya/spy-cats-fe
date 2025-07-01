@@ -1,8 +1,11 @@
 Spy cats FrontEnd Readme
 
 Started 01.07.2025 11:20
+
 Finished 01.07.2025 13:38
+
 Last update: 01.07.2025 16:07 
+
 
 Tools:
  - Next.js
